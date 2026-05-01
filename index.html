@@ -629,6 +629,11 @@
   }
 
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes bounceNum {
+    0%   { transform: scale(0.4); opacity: 0; }
+    60%  { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
 
   /* END SCREEN CHARACTER RAIN */
   #charRain {
@@ -872,6 +877,21 @@
     </div>
   </div>
 
+  <!-- READY SCREEN -->
+  <div id="screen-ready" class="screen">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:20px;">
+      <div id="readyCharacters" style="display:flex;gap:16px;justify-content:center;align-items:flex-end;"></div>
+      <div style="background:white;border-radius:28px;padding:24px 32px;box-shadow:0 8px 0 rgba(0,0,0,0.1),0 12px 30px rgba(0,0,0,0.12);">
+        <div style="font-family:'Fredoka One',cursive;font-size:clamp(1.6rem,6vw,2.4rem);color:#2D2D2D;line-height:1.3;">
+          Let's do it<br>
+          <span style="color:var(--purple)">Lizzy Bear Otter</span>!
+        </div>
+        <div style="font-family:'Fredoka One',cursive;font-size:clamp(1.1rem,4vw,1.5rem);color:#aaa;margin-top:8px;">Good luck! 🍀</div>
+      </div>
+      <div id="readyCountdown" style="font-family:'Fredoka One',cursive;font-size:clamp(4rem,20vw,7rem);color:white;text-shadow:0 4px 0 rgba(0,0,0,0.15);line-height:1;animation:bounceNum 0.5s ease;">3</div>
+    </div>
+  </div>
+
   <!-- GAME -->
   <div id="screen-game" class="screen" style="justify-content:flex-start;gap:8px;padding-bottom:8px;">
     <div class="progress-bar-wrap" style="width:100%">
@@ -1016,6 +1036,26 @@ let words = [
   { word: 'BEEHIVE',    hint: 'The home where bees make their honey',     emoji: '🍯' },
   { word: 'TWO',        hint: 'The number after one',                     emoji: '2️⃣' },
   { word: 'EIGHT',      hint: 'The number after seven',                   emoji: '8️⃣' },
+  { word: 'BUTTER',     hint: 'Spread it on your toast in the morning',   emoji: '🧈' },
+  { word: 'GET',        hint: 'To fetch or receive something',            emoji: '🙌' },
+  { word: 'PEOPLE',     hint: 'A group of human beings',                  emoji: '👨‍👩‍👧‍👦' },
+  { word: 'SAID',       hint: 'Past tense of say — "she said hello"',     emoji: '💬' },
+  { word: 'AFTER',      hint: 'Following behind — "after you!"',          emoji: '➡️' },
+  { word: 'HONEY',      hint: 'Sweet golden syrup made by bees',          emoji: '🍯' },
+  { word: 'EVERYWHERE', hint: 'In every single place you can think of',   emoji: '🌍' },
+  { word: 'GIANT',      hint: 'Extremely big and tall',                   emoji: '🦣' },
+  { word: 'WITH',       hint: 'Together — "come with me!"',               emoji: '🤝' },
+  { word: 'THEY',       hint: 'More than one person — "they are here"',   emoji: '👫' },
+  { word: 'DOWN',       hint: 'The opposite of up',                       emoji: '⬇️' },
+  { word: 'SCURRY',     hint: 'To run quickly with small hurried steps',  emoji: '🐭' },
+  { word: 'THESE',      hint: 'Pointing to things nearby — "these ones"', emoji: '👇' },
+  { word: 'JELLY',      hint: 'A wobbly sweet treat — often with toast',  emoji: '🍮' },
+  { word: 'MEAL',       hint: 'Breakfast, lunch or dinner',               emoji: '🍽️' },
+  { word: 'TIPTOE',     hint: 'Walk very quietly on the tips of your toes', emoji: '🤫' },
+  { word: 'NIBBLES',    hint: 'Takes tiny little bites of food',          emoji: '🐭' },
+  { word: 'MORE',       hint: 'A greater amount — "can I have more?"',    emoji: '➕' },
+  { word: 'SKIP',       hint: 'Jump along happily from foot to foot',     emoji: '🦘' },
+  { word: 'SLOWLY',     hint: 'Not fast at all — taking your time',       emoji: '🐢' },
 ];
 
 let totalStars = 0;
@@ -1280,7 +1320,43 @@ function confirmCharacter() {
     document.getElementById('badgeName').textContent = c1.name;
   }
   document.getElementById('playerBadge').style.display = 'flex';
-  startGame();
+  showReadyScreen();
+}
+
+function showReadyScreen() {
+  // Populate character images on the ready screen
+  const wrap = document.getElementById('readyCharacters');
+  wrap.innerHTML = '';
+  selectedCharacters.forEach((ch, i) => {
+    const img = document.createElement('img');
+    img.src = ch.img;
+    img.alt = ch.name;
+    const size = selectedCharacters.length === 1 ? 160 : 130;
+    img.style.cssText = `width:${size}px;height:${size}px;object-fit:cover;border-radius:24px;border:4px solid white;box-shadow:0 8px 24px rgba(0,0,0,0.2);animation:pop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.15}s both;`;
+    wrap.appendChild(img);
+  });
+
+  showScreen('ready');
+
+  // 3-2-1 countdown then GO!
+  const countEl = document.getElementById('readyCountdown');
+  const steps = ['3','2','1','GO! 🚀'];
+  let i = 0;
+  const tick = () => {
+    countEl.textContent = steps[i];
+    // Re-trigger animation
+    countEl.style.animation = 'none';
+    countEl.offsetHeight;
+    countEl.style.animation = 'bounceNum 0.5s ease forwards';
+    countEl.style.color = i === 3 ? 'var(--sun)' : 'white';
+    i++;
+    if (i < steps.length) {
+      setTimeout(tick, 900);
+    } else {
+      setTimeout(startGame, 600);
+    }
+  };
+  setTimeout(tick, 400);
 }
 
 // ── SCREENS ──────────────────────────────────────────────────────────────────
@@ -1386,9 +1462,9 @@ function speakCurrentWord() {
 
 function buildKeyboard() {
   const rows = [
-    ['A','B','C','D','E','F','G','H','I','J'],
-    ['K','L','M','N','O','P','Q','R','S'],
-    ['T','U','V','W','X','Y','Z']
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L'],
+    ['Z','X','C','V','B','N','M']
   ];
   const vowels = new Set(['A','E','I','O','U']);
   const kb = document.getElementById('keyboard');
@@ -2029,6 +2105,8 @@ function spawnConfetti() {
   }
 }
 
+
+
 // ── EXIT ─────────────────────────────────────────────────────────────────────
 function confirmExit() {
   window.speechSynthesis && window.speechSynthesis.cancel();
@@ -2045,6 +2123,14 @@ function doExit() {
 init();
 </script>
 <div id="charRain" onclick="dismissRain()"><div id="charRainTap">🎉 Tap anywhere to continue 🎉</div></div>
+
+
+    <div id="marshallPlayHint" style="display:none;position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+      <div style="font-size:5rem;">▶️</div>
+      <div style="font-family:'Fredoka One',cursive;color:white;font-size:1.3rem;text-shadow:0 2px 8px rgba(0,0,0,0.6);">Tap to play!</div>
+    </div>
+  </div>
+</div>
 
 <!-- Exit confirmation overlay -->
 <div id="exitOverlay" style="display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);">
