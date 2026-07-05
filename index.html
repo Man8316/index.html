@@ -1058,6 +1058,16 @@ let words = [
   { word: 'MORE',       hint: 'A greater amount',                           emoji: '📈' },
   { word: 'SKIP',       hint: 'Children hopping from foot to foot',         emoji: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAAA+0lEQVR4nO3cOw6DMBBF0bGXlIr9V6nYEiksEccfNEUkzJ13S6A5ei5oIJmv4/1yPnlXadtdj13fXt/Zdy2fgp9IrZux8/Dq07U2J7QLA6hNzdQ/C/O01qHGRxrcF4yct1TTcn8J2QkMeaTx85YKM+TCoUrO8+x8Nb8xJyTcwgLTE5iewPQEpicwPYHpCUxPYHoC0xOYnsD0BKYnMD2B6QlMT2B6AtMTmJ7A9ASmJzA9gekJTE9gegLTE5hesjAfaplZ2vZwC4cEr/8R1l8qzJALW4CRT2DuL/GqaVGPdAk5coMa/6mF8Soy3G98pAFTzwj6+dCk9eXOU/kBzUc7kT3spnAAAAAASUVORK5CYII=' },
   { word: 'SLOWLY',     hint: 'Not fast at all — taking your time',       emoji: '🐢' },
+   { word: 'LOST',      hint: 'Not knowing where you are',              emoji: '🗺️' },
+   { word: 'FRIDGE',    hint: 'Keeps food cold in the kitchen',         emoji: '🧊' },
+   { word: 'SHELF',     hint: 'A flat space to keep books or toys',     emoji: '📚' },
+   { word: 'CHAIR',     hint: 'Something you sit on',                   emoji: '🪑' },
+   { word: 'FLUFFY',    hint: 'Soft and puffy, like a cloud',           emoji: '☁️' },
+   { word: 'STARE',     hint: 'To look at something for a long time',   emoji: '👀' },
+   { word: 'TASTY',     hint: 'Something that tastes really yummy',     emoji: '😋' },
+   { word: 'TRICK',     hint: 'A clever way to surprise someone',       emoji: '🎩' },
+   { word: 'MOMENT',    hint: 'A very short piece of time',             emoji: '⏱️' },
+   { word: 'THROUGH',   hint: 'Going from one side to the other',       emoji: '🚪' },
 ];
 
 let totalStars = 0;
@@ -1382,8 +1392,31 @@ function selectMode(el) {
 // ── GAME ─────────────────────────────────────────────────────────────────────
 function startGame() {
   if (words.length === 0) { alert('Add some words first! Tap the 📝 Words button.'); return; }
-  const shuffled = shuffle([...words]);
-  gameWords = shuffled.slice(0, 5); // 5 words for testing
+
+  // ── Weighted pick: ~80% of a round comes from the new "priority" words ──
+  const PRIORITY_WORDS = new Set(['LOST','FRIDGE','SHELF','CHAIR','FLUFFY','STARE','TASTY','TRICK','MOMENT','THROUGH']);
+  const ROUND_SIZE = 8;
+  const PRIORITY_TARGET = Math.round(ROUND_SIZE * 0.8);
+
+  const isPriority = w => PRIORITY_WORDS.has(w.word);
+  const isFresh    = w => !recentlyUsedWords.includes(w.word);
+  const priorityFresh = shuffle(words.filter(w =>  isPriority(w) &&  isFresh(w)));
+  const priorityStale = shuffle(words.filter(w =>  isPriority(w) && !isFresh(w)));
+  const regularFresh  = shuffle(words.filter(w => !isPriority(w) &&  isFresh(w)));
+  const regularStale  = shuffle(words.filter(w => !isPriority(w) && !isFresh(w)));
+
+  const priorityPool = [...priorityFresh, ...priorityStale];
+  const regularPool  = [...regularFresh,  ...regularStale];
+  const pickedPriority = priorityPool.slice(0, Math.min(PRIORITY_TARGET, priorityPool.length));
+  const pickedRegular  = regularPool.slice(0, ROUND_SIZE - pickedPriority.length);
+  const shortfall = ROUND_SIZE - pickedPriority.length - pickedRegular.length;
+  const topup = priorityPool.slice(pickedPriority.length, pickedPriority.length + shortfall);
+  gameWords = shuffle([...pickedPriority, ...pickedRegular, ...topup]);
+
+  // Record these words as recently used (keep last 2 rounds worth)
+  const usedNow = gameWords.map(w => w.word);
+  recentlyUsedWords = [...recentlyUsedWords, ...usedNow].slice(-(Math.min(words.length - 5, 20)));
+
   currentIndex = 0;
   roundStarsEarned = 0;
   missedWords = [];
@@ -2105,12 +2138,24 @@ function updateWordCount() {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
+// Track words used in recent rounds to avoid immediate repeats
+let recentlyUsedWords = [];
+
 function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+  // Use crypto.getRandomValues for better randomness where available
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    let j;
+    if (window.crypto && window.crypto.getRandomValues) {
+      const buf = new Uint32Array(1);
+      window.crypto.getRandomValues(buf);
+      j = buf[0] % (i + 1);
+    } else {
+      j = Math.floor(Math.random() * (i + 1));
+    }
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return arr;
+  return a;
 }
 
 function spawnConfetti() {
