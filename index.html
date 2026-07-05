@@ -784,7 +784,7 @@
         <span id="badgeName"></span>
       </div>
       <div class="stars-display">⭐ <span id="totalStars">0</span></div>
-      <button class="manage-btn" onclick="showScreen('manage')" id="manageBtn" style="display:none">📝 Words</button>
+      <button class="manage-btn" onclick="tryOpenManage()" id="manageBtn">📝 Words</button>
       <button class="manage-btn" onclick="showScreen('classcode')" id="classBtn">🏫 Class</button>
     </div>
   </div>
@@ -1062,12 +1062,12 @@ let words = [
    { word: 'FRIDGE',    hint: 'Keeps food cold in the kitchen',         emoji: '🧊' },
    { word: 'SHELF',     hint: 'A flat space to keep books or toys',     emoji: '📚' },
    { word: 'CHAIR',     hint: 'Something you sit on',                   emoji: '🪑' },
-   { word: 'FLUFFY',    hint: 'Soft and puffy, like a cloud',           emoji: '☁️' },
+   { word: 'FLUFFY',    hint: 'Soft and puffy, like a cloud or a soft dog or toy', emoji: '☁️' },
    { word: 'STARE',     hint: 'To look at something for a long time',   emoji: '👀' },
    { word: 'TASTY',     hint: 'Something that tastes really yummy',     emoji: '😋' },
-   { word: 'TRICK',     hint: 'A clever way to surprise someone',       emoji: '🎩' },
+   { word: 'TRICK',     hint: 'A clever way to surprise someone or something a magician plays', emoji: '🎩' },
    { word: 'MOMENT',    hint: 'A very short piece of time',             emoji: '⏱️' },
-   { word: 'THROUGH',   hint: 'Going from one side to the other',       emoji: '🚪' },
+   { word: 'THROUGH',   hint: 'Going from one side to the other',       emoji: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA0OCI+PHBhdGggZD0iTTIgNDIgUTMyIDQgNjIgNDIgWiIgZmlsbD0iIzhCNzM1NSIvPjxyZWN0IHg9IjAiIHk9IjQxIiB3aWR0aD0iNjQiIGhlaWdodD0iNSIgZmlsbD0iIzVhM2YyNiIvPjxwYXRoIGQ9Ik0yMCA0MiBRMzIgMjAgNDQgNDIgWiIgZmlsbD0iIzFhMWExYSIvPjxsaW5lIHgxPSI0IiB5MT0iMzMiIHgyPSI2MCIgeTI9IjMzIiBzdHJva2U9IiNGRjRENEQiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBvbHlnb24gcG9pbnRzPSI2MCwzMyA1MSwyNiA1MSw0MCIgZmlsbD0iI0ZGNEQ0RCIvPjwvc3ZnPg==' },
 ];
 
 let totalStars = 0;
@@ -1163,8 +1163,49 @@ async function activateClass(code, isNew) {
   }
 }
 
+// ── Cloud sync for the shared word list (JSONBin.io) ─────────────────────
+const CLOUD_BIN_ID = '6a4a4c68f5f4af5e29623d00';
+const CLOUD_KEY    = '$2a$10$b/fW1Iiek3QFj9jDVtdGE.3CVDAiOk6y4sYvtwzEHkBcZaHtRoKla';
+const CLOUD_URL    = 'https://api.jsonbin.io/v3/b/' + CLOUD_BIN_ID;
+
+async function cloudLoadWords() {
+  if (!CLOUD_BIN_ID || CLOUD_BIN_ID.indexOf('PASTE_') === 0) return;
+  try {
+    const r = await fetch(CLOUD_URL + '/latest', {
+      headers: { 'X-Master-Key': CLOUD_KEY },
+      cache: 'no-store'
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    const remoteWords = data && data.record && data.record.words;
+    if (!Array.isArray(remoteWords)) return;
+    // Merge remote and local: remote wins on duplicates, local extras kept
+    const map = new Map(words.map(w => [w.word, w]));
+    remoteWords.forEach(w => { if (w && w.word) map.set(w.word, w); });
+    words = [...map.values()];
+    try { localStorage.setItem('spellingStars_words_local', JSON.stringify(words)); } catch(e) {}
+    const localOnly = words.filter(w => !remoteWords.find(r => r.word === w.word));
+    if (localOnly.length > 0) cloudSaveWords();
+    updateWordCount();
+    const mgr = document.getElementById('screen-manage');
+    if (mgr && mgr.classList.contains('active')) renderWordList();
+  } catch(e) { console.warn('cloudLoadWords failed:', e); }
+}
+
+async function cloudSaveWords() {
+  if (!CLOUD_BIN_ID || CLOUD_BIN_ID.indexOf('PASTE_') === 0) return;
+  try {
+    await fetch(CLOUD_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': CLOUD_KEY },
+      body: JSON.stringify({ words })
+    });
+  } catch(e) { console.warn('cloudSaveWords failed:', e); }
+}
+
 async function saveWords() {
   try { localStorage.setItem('spellingStars_words_local', JSON.stringify(words)); } catch(e) {}
+  cloudSaveWords();
   if (activeClassCode) {
     try { await db.upsert('classes', { code: activeClassCode, words: JSON.stringify(words) }); } catch(e) { console.error('saveWords:', e); }
   }
@@ -1183,7 +1224,7 @@ function leaveClass() {
   document.getElementById('classCreateSection').style.display = 'block';
   document.getElementById('joinCodeInput').value = '';
   document.getElementById('classError').textContent = '';
-  document.getElementById('manageBtn').style.display = 'none';
+  document.getElementById('manageBtn').style.display = '';
   const local = localStorage.getItem('spellingStars_words_local');
   if (local) { try { words = JSON.parse(local); } catch(e) {} }
   renderWordList();
@@ -1238,6 +1279,7 @@ async function init() {
 
   renderWordList();
   updateWordCount();
+  cloudLoadWords();
 }
 
 function checkPlayReady() {
@@ -1375,6 +1417,18 @@ function showReadyScreen() {
 }
 
 // ── SCREENS ──────────────────────────────────────────────────────────────────
+let _wordsUnlocked = false;
+function tryOpenManage() {
+  if (_wordsUnlocked) { showScreen('manage'); return; }
+  const code = prompt('Enter the passcode to add words:');
+  if (code === null) return;
+  if (code.trim().toUpperCase() === 'LIZZIE') {
+    _wordsUnlocked = true;
+    showScreen('manage');
+  } else {
+    alert('Sorry, that passcode is not correct.');
+  }
+}
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
@@ -1396,7 +1450,7 @@ function startGame() {
   // ── Weighted pick: ~80% of a round comes from the new "priority" words ──
   const PRIORITY_WORDS = new Set(['LOST','FRIDGE','SHELF','CHAIR','FLUFFY','STARE','TASTY','TRICK','MOMENT','THROUGH']);
   const ROUND_SIZE = 8;
-  const PRIORITY_TARGET = Math.round(ROUND_SIZE * 0.8);
+  const PRIORITY_TARGET = 5; // 5 new + 3 old per 8-word round
 
   const isPriority = w => PRIORITY_WORDS.has(w.word);
   const isFresh    = w => !recentlyUsedWords.includes(w.word);
