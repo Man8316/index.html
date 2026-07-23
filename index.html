@@ -1068,6 +1068,36 @@ let words = [
    { word: 'TRICK',     hint: 'A clever way to surprise someone or something a magician plays', emoji: '🎩' },
    { word: 'MOMENT',    hint: 'A very short piece of time',             emoji: '⏱️' },
    { word: 'THROUGH',   hint: 'Going from one side to the other',       emoji: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA0OCI+PHBhdGggZD0iTTIgNDIgUTMyIDQgNjIgNDIgWiIgZmlsbD0iIzhCNzM1NSIvPjxyZWN0IHg9IjAiIHk9IjQxIiB3aWR0aD0iNjQiIGhlaWdodD0iNSIgZmlsbD0iIzVhM2YyNiIvPjxwYXRoIGQ9Ik0yMCA0MiBRMzIgMjAgNDQgNDIgWiIgZmlsbD0iIzFhMWExYSIvPjxsaW5lIHgxPSI0IiB5MT0iMzMiIHgyPSI2MCIgeTI9IjMzIiBzdHJva2U9IiNGRjRENEQiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBvbHlnb24gcG9pbnRzPSI2MCwzMyA1MSwyNiA1MSw0MCIgZmlsbD0iI0ZGNEQ0RCIvPjwvc3ZnPg==' },
+   { word: 'CAME',       hint: 'Arrived at a place',                                emoji: '🚶' },
+   { word: 'CRIED',      hint: 'Had tears because you were sad or hurt',            emoji: '😢' },
+   { word: 'CARRIED',    hint: 'Held something in your arms',                       emoji: '🧺' },
+   { word: 'FUSS',       hint: 'A big worry about something small',                 emoji: '😤' },
+   { word: 'MADE',       hint: 'Built or created something',                        emoji: '🎂' },
+   { word: 'NONSENSE',   hint: 'Silly words that do not make sense',                emoji: '🤪' },
+   { word: 'TOILET',     hint: 'Where you go to the bathroom',                      emoji: '🚽' },
+   { word: 'LOVELY',     hint: 'Very pretty or very nice',                          emoji: '🌸' },
+   { word: 'TALKING',    hint: 'Using your voice to speak to someone',              emoji: '🗣️' },
+   { word: 'BROTHER',    hint: 'A boy in your family',                              emoji: '👦' },
+   { word: 'FESTIVAL',   hint: 'A big, fun celebration',                            emoji: '🎉' },
+   { word: 'STREET',     hint: 'A road where cars drive and people walk',           emoji: '🛣️' },
+   { word: 'PEOPLE',     hint: 'More than one person',                              emoji: '👥' },
+   { word: 'LANTERNS',   hint: 'Pretty paper lights you carry',                     emoji: '🏮' },
+   { word: 'FOUND',      hint: 'Saw and picked up something you were looking for',  emoji: '🔎' },
+   { word: 'HELD',       hint: 'Kept something in your hand',                       emoji: '✋' },
+   { word: 'STOPPED',    hint: 'Did not go any further',                            emoji: '🛑' },
+   { word: 'INSIDE',     hint: 'In the middle of something',                        emoji: '📦' },
+   { word: 'PRICE',      hint: 'How much money something costs',                    emoji: '💰' },
+   { word: 'DELICIOUS',  hint: 'So tasty you want more, like mooncakes',            emoji: '🥮' },
+   { word: 'BREAKFAST',  hint: 'The first meal you eat in the morning',             emoji: '🍳' },
+   { word: 'HUNGRY',     hint: 'When your tummy wants food',                        emoji: '😋' },
+   { word: 'DRESSED',    hint: 'Put on your clothes',                               emoji: '👗' },
+   { word: 'VISIT',      hint: 'Go to see someone',                                 emoji: '🚪' },
+   { word: 'CLOTHES',    hint: 'Things you wear like a shirt or dress',             emoji: '👕' },
+   { word: 'POCKETS',    hint: 'The little pouches in your trousers',               emoji: '👖' },
+   { word: 'HURRY',      hint: 'Move quickly',                                      emoji: '🏃' },
+   { word: 'WAIT',       hint: 'Stay still until something happens',                emoji: '⏰' },
+   { word: 'NAUGHTY',    hint: 'Not being good',                                    emoji: '😈' },
+   { word: 'SMILED',     hint: 'Made a happy face',                                 emoji: '😊' },
 ];
 
 let totalStars = 0;
@@ -1448,7 +1478,13 @@ function startGame() {
   if (words.length === 0) { alert('Add some words first! Tap the 📝 Words button.'); return; }
 
   // ── Weighted pick: ~80% of a round comes from the new "priority" words ──
-  const PRIORITY_WORDS = new Set(['LOST','FRIDGE','SHELF','CHAIR','FLUFFY','STARE','TASTY','TRICK','MOMENT','THROUGH']);
+  // Batch A = current spelling cohort. Batch B automatically takes over from 2 Aug 2026.
+  const BATCH_A = ['LOST','FRIDGE','SHELF','CHAIR','FLUFFY','STARE','TASTY','TRICK','MOMENT','THROUGH',
+                   'CAME','CRIED','CARRIED','FUSS','MADE','NONSENSE','TOILET','LOVELY','TALKING','BROTHER'];
+  const BATCH_B = ['FESTIVAL','STREET','PEOPLE','LANTERNS','FOUND','HELD','STOPPED','INSIDE','PRICE','DELICIOUS',
+                   'BREAKFAST','HUNGRY','DRESSED','VISIT','CLOTHES','POCKETS','HURRY','WAIT','NAUGHTY','SMILED'];
+  const BATCH_B_START = new Date('2026-08-02T00:00:00');
+  const PRIORITY_WORDS = new Set(new Date() >= BATCH_B_START ? BATCH_B : BATCH_A);
   const ROUND_SIZE = 8;
   const PRIORITY_TARGET = 5; // 5 new + 3 old per 8-word round
 
